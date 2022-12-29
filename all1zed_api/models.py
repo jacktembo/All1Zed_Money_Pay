@@ -55,12 +55,6 @@ class Payment(models.Model):
         return f"{self.user_id}-{self.service_provider}-{self.service}"
 
 
-class UserWallet(models.Model):
-    # wallet_id = models.UUIDField(unique=True, default=uuid.uuidv4)
-    # payment = JSONField(null=True, blank=True)
-    created_on = models.DateTimeField(auto_now=True)
-
-
 class MerchantCode(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     merchant_code = models.CharField(max_length=15, unique=True)
@@ -71,11 +65,12 @@ class MerchantCode(models.Model):
 
 class Transaction(models.Model):
     branch_name = models.ForeignKey(BusinessAccount, on_delete=models.CASCADE, null=True, blank=True)
+    card_number = models.ForeignKey(CardAccount, on_delete=models.SET_NULL, null=True, blank=True)
     txn_type = models.CharField(max_length=100, blank=True, null=True) #momo or bank
     txn_amount = models.CharField(max_length=1000, blank=True, null=True)
-    txn_charge = models.CharField(max_length=100, blank=True, null=True)
+    txn_commission = models.CharField(max_length=100, blank=True, null=True)
     update_amount = models.CharField(max_length=1000, blank=True, null=True)
-    reference_id = models.CharField(max_length=200, blank=True)
+    reference_id = models.CharField(max_length=200, blank=False)
     message = models.CharField(max_length=1000, blank=True)
     status = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)

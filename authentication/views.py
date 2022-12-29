@@ -14,6 +14,7 @@ from authentication.serializers import CardAccountSerializer
 from .helper_functions import id_generator
 from all1zed_api.models import CardAccount, MerchantCode
 from all1zed_api.momo_pay import generate_pin
+from all1zed_api.send_notification import send_notification
 import jwt 
 
 
@@ -162,6 +163,8 @@ class RegisterCardView(APIView):
    
             if serializer.is_valid():
                 serializer.save()
+                notification_msg  = f'Dear customer, your card account has been successfully created with the following details: First Name: {first_name}, Last Name: {last_name}, Card Number: {card_number}. Please top up your card to start transacting with your card.'       
+                send_notification(phone_number, notification_msg)
                 return Response({'Card_Account_Data': serializer.data}, status=status.HTTP_201_CREATED)
             return Response({'Error': serializer.errors})
         else:

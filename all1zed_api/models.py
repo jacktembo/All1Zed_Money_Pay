@@ -66,7 +66,8 @@ class MerchantCode(models.Model):
 class Transaction(models.Model):
     branch_name = models.ForeignKey(BusinessAccount, on_delete=models.CASCADE, null=True, blank=True)
     card_number = models.ForeignKey(CardAccount, on_delete=models.SET_NULL, null=True, blank=True)
-    txn_type = models.CharField(max_length=100, blank=True, null=True) #momo or bank
+    account_type = models.CharField(max_length=100, blank=True, null=True) #Card, MOMO or Bank
+    institution_name = models.CharField(max_length=100, blank=True, null=True) #Zanaco, Airtel or MTN
     txn_amount = models.CharField(max_length=1000, blank=True, null=True)
     txn_commission = models.CharField(max_length=100, blank=True, null=True)
     update_amount = models.CharField(max_length=1000, blank=True, null=True)
@@ -79,20 +80,3 @@ class Transaction(models.Model):
     def __str__(self):
         return f'{self.txn_action} - {self.reference_id}'
     
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-#
-#    def __str__(self):
-#        return f"{self.username} - {self.trans_action} - {self.refference_id}"

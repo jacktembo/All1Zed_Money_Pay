@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from all1zed_api.models import Transaction
 from all1zed_api.serializers import (
     BalanceSerializer, BusinessAccountSerializer,
     BusinessProfileListSerializer,
@@ -16,6 +17,8 @@ from all1zed_api.nfs_cashin import (
     nfs_airtel_cashin_confirm, nfs_zamtel_cashin,
     nfs_zamtel_cashin_confirm,
 )
+from all1zed_api.send_notification import send_notification
+
 
 login_session = login()
 
@@ -48,6 +51,7 @@ class CardPaymentView(APIView):
 
         if serializer.is_valid():
             merchant_code = request.data.get('merchant_code', '')
+            branch_name = request.data.get('branch_name', None)
             card_number = request.data.get('card_number', None)
             amount = float(request.data.get('txn_amount', None))
             
@@ -55,13 +59,13 @@ class CardPaymentView(APIView):
             try:
                 card_account = CardAccount.objects.get(card_number=card_number)
             except CardAccount.DoesNotExist:
-                return Response({'Error': 'Account not found'})
+                return Response({'Error': 'Card account not found'})
 
             # Find Merchant account on All1Zed platform
             try:
                 merchant_account = BusinessAccount.objects.get(merchant_code=merchant_code)
             except BusinessAccount.DoesNotExist:
-                return Response({'Error': 'Account not found'})
+                return Response({'Error': 'Merchant account not found'})
 
             if card_account.card_balance < float(amount):
                 return Response({'Error': 'Insufficient balance'})
@@ -83,33 +87,32 @@ class CardPaymentView(APIView):
                         merchant_account.save()
                         card_account.save()
                         txn_id = generate_pin(12)
-                        # send_message(sender.phone_number, verification_msg)
                         print(f'Zanaco-CONFIRM {confirm_response}')
 
-#                        Transaction.objects.create(
-#                            user=request.user,
-#                            txn_type='pay',
-#                            txn_amount=amount,             
-#                            txn_charge=all1zed_charge,          
-#                            update_amount=customer_acc.balance,             
-#                            reference_id=txn_id,
-#                            message=f'Payment of {amount} to {merchant_code} is successful',
-#                            status= True
-#                        )  
-#
-#                        Transaction.objects.create(
-#                            user=request.user,
-#                            txn_type='pay',
-#                            txn_amount=amount,             
-#                            txn_charge=all1zed_charge,          
-#                            update_amount=merchant_acc.balance,             
-#                            reference_id=txn_id,
-#                            message=f'{request.user.username} has successfully paid {amount} to you account',
-#                            status= True
-#                        )  
-#                        
-                        message = f'You have successfully paid ZMW{amount} to {merchant_account.business_name} - {merchant_code}. Your balance is now {card_account.card_balance} Transaction ID: {txn_id}'
-       
+                        Transaction.objects.create(
+                            card_number=card_number,
+                            txn_type='pay',
+                            txn_amount=amount,                      
+                            update_amount=card_account.card_balance,             
+                            reference_id=txn_id,
+                            message=f'Payment of {amount} to {merchant_code} is successful',
+                            status= True
+                        )  
+
+                        Transaction.objects.create(
+                            branch_name=branch_name,
+                            txn_type='pay',
+                            txn_amount=amount,             
+                            txn_commission=commission,          
+                            update_amount=merchant_account.balance,             
+                            reference_id=txn_id,
+                            message=f'{card_number} has successfully paid {amount} to your account',
+                            status= True
+                        )  
+                     
+                        notification_msg = f'You have successfully paid ZMW{amount} to {merchant_account.business_name} - {merchant_code}. Your balance is now {card_account.card_balance} Transaction ID: {txn_id}'
+                        send_notification(card_account.phone_number, notification_msg)
+                        
                         return Response({'Success': 'OK', 'Details': serializer.data})
 
                     return Response({'Error': True})

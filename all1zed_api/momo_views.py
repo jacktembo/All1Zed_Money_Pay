@@ -10,6 +10,7 @@ from all1zed_api.momo_pay import (
   )
 from all1zed_api.models import Transaction, CardAccount
 from all1zed_api.serializers import BalanceSerializer
+from all1zed_api.send_notification import send_notification
 
 
 login_session = login()
@@ -83,6 +84,8 @@ class AirtelPayConfirmView(APIView):
         try:
             if 'Payment Successful' in resp_body.get('response_message', None):
                 card_account.save()
+                verification_msg  = f'Dear customer, your card account has been credited with ZMW{amount}. Your card balance is now ZMW{card_account.card_balance}.'
+                send_notification(card_account.phone_number, verification_msg)
                 return Response({"Success": "OK"})
         except (KeyError, TypeError) as e:
             pass 
@@ -126,7 +129,8 @@ class ZamtelPayView(APIView):
             pass
         if 'Payment Successful' in zamtel_confirm.get('response_message'):
             card_account.save()
-
+            verification_msg  = f'Dear customer, your card account has been credited with ZMW{amount}. Your card balance is now ZMW{card_account.card_balance}.'
+            send_notification(card_account.phone_number, verification_msg)
             return Response({'Success': 'OK'})
         return Response({'Msg': 'Error'})
 
@@ -192,28 +196,12 @@ class MtnDebitConfirm(APIView):
                 print(confirmation_number)
                 approval_response = mtn_momo_pay_confirm(confirmation_number, session_uuid)
                 card_account.save()
+
+                verification_msg  = f'Dear customer, your card account has been credited with ZMW{amount}. Your card balance is now ZMW{card_account.card_balance}.'
+                send_notification(card_account.phone_number, verification_msg)
                 print(f'APPROVAL-CONFIRM {approval_response}')
+
                 return Response({'Message': 'Success'})
             return Response({'Error': True})
         except (KeyError, TypeError) as e:
             pass
-
-
-
-#{
-#  "txn_amount": "100",
-#   "wallet_msisdn": "976637416",
-#    "airtel_reference": "3663813458",
-#  "session_uuid": "7d4fb09e-37ae-4328-a456-314cdca08a62",
-# "card_number": "0022"
-#}
-
-
-#
-#{
-#  "wallet_msisdn": "0963533399",
-#  "txn_amount": "100",
-#  "supplier_transaction_id": "3614814347",
-#  "session_uuid": "dfc9560f-2b6e-48e0-a186-307f0d554088",
-# "card_number": "0022"
-#}

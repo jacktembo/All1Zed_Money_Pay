@@ -183,22 +183,3 @@ def mtn_momo_pay_confirm(confirmation_number, login_session):
     results = json.loads(response.text)
     print(f"MTN_DEBIT_CONFIRM {results}")
     return results
-
-
-
-
-#{
-#  "wallet_msisdn": "0966005472",
-#  "txn_amount": "100",
-#  "session_uuid": "54292414-4444-4eb2-8e03-aa1a1f2a28c3"
-#}
-
-
-#{
-#  "wallet_msisdn": "0966005472",
-#  "txn_amount": "100",
-#  "supplier_transaction_id": "3607822940",
-#  "session_uuid": "54292414-4444-4eb2-8e03-aa1a1f2a28c3",
-# "card_number": "0966005472"
-#}
-

@@ -28,6 +28,8 @@ from all1zed_api.nfs_cashin import (
     nfs_airtel_cashin_confirm, nfs_zamtel_cashin,
     nfs_zamtel_cashin_confirm,
 )
+from all1zed_api.send_notification import send_notification
+
 
 
 login_session = login()
@@ -108,11 +110,11 @@ class CashinView(APIView):
                             reference_id=txn_id
                         )
 
-                        verification_msg  = f'You have sent ZMW{amount} to {receiver.first_name} {receiver.first_name} card account number {receiver_card_number}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'
-                        notification_msg = f'You have received ZMW{amount} from {sender.first_name} {sender.first_name} {sender.phone_number}. Your card balance is now ZMW{receiver.card_balance}'
+                        verification_msg  = f'Dear customer, you have sent ZMW{amount} to {receiver.first_name} {receiver.first_name} card account number {receiver_card_number}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'
+                        notification_msg = f'Dear customer, you have received ZMW{amount} from {sender.first_name} {sender.first_name} {sender.phone_number}. Your card balance is now ZMW{receiver.card_balance}'
 
-                        # send_message(receiver.phone_number, notification_msg)
-                        # send_message(sender.phone_number, verification_msg)
+                        send_notification(receiver.phone_number, notification_msg)
+                        send_notification(sender.phone_number, verification_msg)
                         return Response({'Success': 'OK'})
                     return Response({"Error": serializer.errors})
 
@@ -126,9 +128,11 @@ class CashinView(APIView):
                             confirm_response = nfs_momo_cashin_confirm(confirmation_number, login_session)
                             sender.card_balance -= float(amount)
                             sender.save()
-                            verification_msg  = f'You have transfered ZMW{amount} to {reference}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'
-                            # send_message(sender.phone_number, verification_msg)
+
+                            verification_msg  = f'Dear customer, you have transfered ZMW{amount} to {reference}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'       
+                            send_notification(receiver.phone_number, verification_msg)
                             print(f'APPROVAL-CONFIRM {confirm_response}')
+
                             return Response({'Success':'OK', 'Data': serializer.data})
                         return Response({'Error': True})
                     except (KeyError, TypeError) as e:
@@ -144,11 +148,12 @@ class CashinView(APIView):
                             confirm_response = nfs_airtel_cashin_confirm(confirmation_number, login_session)
                             sender.card_balance -= float(amount)
                             sender.save()
-                            verification_msg  = f'You have transfered ZMW{amount} to {reference}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'
-                            # send_message(sender.phone_number, verification_msg)
+                            
+                            verification_msg  = f'Dear customer, you have transfered ZMW{amount} to {reference}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'
+                            send_notification(sender.phone_number, verification_msg)
                             print(f'Airtel-CONFIRM {confirm_response}')
-                            return Response({"Success": serializer.data, "Message": "Transfer successful."})
 
+                            return Response({"Success": serializer.data, "Message": "Transfer successful."})
                         return Response({'Error': True})
                     except (KeyError, TypeError) as e:
                         pass
@@ -163,20 +168,19 @@ class CashinView(APIView):
                             confirm_response = nfs_zamtel_cashin_confirm(confirmation_number, login_session)
                             sender.card_balance -= float(amount)
                             sender.save()
-                            verification_msg  = f'You have transfered ZMW{amount} to {reference}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'
-                            # send_message(sender.phone_number, verification_msg)
+                            
+                            verification_msg  = f'Dear customer, you have transfered ZMW{amount} to {reference}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'
+                            send_notification(sender.phone_number, verification_msg)
                             print(f'Airtel-CONFIRM {confirm_response}')
-                            return Response({"Success": serializer.data, "Message": "Transfer successful."})
 
+                            return Response({"Success": serializer.data, "Message": "Transfer successful."})
                         return Response({'Error': True})
                     except (KeyError, TypeError) as e:
                         pass
                     
                 return Response({"Error": 'Unknown account type'})
-    
+            return Response({'Error': 'Unknown phone number'})
         return Response({'Error': serializer.errors})
-
-
 
 
 #{
@@ -187,11 +191,3 @@ class CashinView(APIView):
 #   "session_uuid": "a529f7c9-9806-4533-86b3-53a68dbdb49c",
 #   "card_number": "0022"
 #}
-
-
-
-
-
-
-
-

@@ -17,7 +17,7 @@ from all1zed_api.nfs_cashin import (
     nfs_airtel_cashin_confirm, nfs_zamtel_cashin,
     nfs_zamtel_cashin_confirm,
 )
-from all1zed_api.send_notification import send_notification
+from all1zed_api.send_notifications import send_notification
 
 
 login_session = login()

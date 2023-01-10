@@ -73,14 +73,23 @@ WSGI_APPLICATION = 'all1zed_core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#        'NAME': 'moneypay_db',
+#        'USER': 'all1zed',
+#        'PASSWORD': os.environ.get('DB_PASSWORD'),
+#        'HOST': 'localhost',
+#        'POST': '5432',
+#    }
+#}
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
@@ -104,11 +113,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+TIME_ZONE = 'Africa/Lusaka'
 USE_I18N = True
-
+USE_L10N = True
 USE_TZ = True
 
 # Custom user model
@@ -124,6 +131,37 @@ REST_FRAMEWORK = {
 
 # JWT_KEY
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+
+
+# Rest Framework
+#REST_FRAMEWORK = {
+#    'DEFAULT_PERMISSION_CLASSES': [
+#        'rest_framework.permissions.IsAuthenticated',
+#    ],
+#    'DEFAULT_AUTHENTICATION_CLASSES': [
+#        'rest_framework_simplejwt.authentication.JWTAuthentication',
+#        'rest_framework.authentication.BasicAuthentication',
+#        'rest_framework.authentication.SessionAuthentication',
+#    ],
+#    'DEFAULT_PAGINATION_CLASS': 'pagination.CustomPageNumber',
+#    'PAGE_SIZE': 20
+#    # 'DATE_INPUT_FORMATS': ["%Y-%m-%d", ],
+#}
+#
+#SIMPLE_JWT = {
+#    'ACCESS_TOKEN_LIFETIME': timedelta(hours=12),
+#    'REFRESH_TOKEN_LIFETIME': timedelta(days=2),
+#    'ROTATE_REFRESH_TOKENS': True,
+#    'BLACKLIST_AFTER_ROTATION': True,
+#    'ALGORITHM': 'HS256',
+#    'SIGNING_KEY': SECRET_KEY,
+#    'VERIFYING_KEY': None,
+#    'AUTH_HEADER_TYPES': ('JWT',),
+#    'USER_ID_FIELD': 'id',
+#    'USER_ID_CLAIM': 'user_id',
+#    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+#    'TOKEN_TYPE_CLAIM': 'token_type',
+#}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/

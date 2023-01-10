@@ -77,7 +77,7 @@ def airtel_pay_confirm(phone_number, confirmation_number, login_session):
 
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/airtelPayPaymentConfirm", json=payload, headers=headers)
     results = json.loads(response.text)
-    print(results)
+    print(f'SESSION_UUID: {login_session}- results')
     return results
 
 

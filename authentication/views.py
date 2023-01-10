@@ -14,7 +14,7 @@ from authentication.serializers import CardAccountSerializer
 from .helper_functions import id_generator
 from all1zed_api.models import CardAccount, MerchantCode
 from all1zed_api.momo_pay import generate_pin
-from all1zed_api.send_notification import send_notification
+from all1zed_api.send_notifications import send_notification
 import jwt 
 
 
@@ -158,18 +158,20 @@ class RegisterCardView(APIView):
         card_number = request.data.get('card_number', None)
         card_id = id_generator()
         
-        if CardAccount.objects.get(card_number=card_number).exists() == False:
-            serializer = CardAccountSerializer(data=request.data)
-   
-            if serializer.is_valid():
-                serializer.save()
-                notification_msg  = f'Dear customer, your card account has been successfully created with the following details: First Name: {first_name}, Last Name: {last_name}, Card Number: {card_number}. Please top up your card to start transacting with your card.'       
-                send_notification(phone_number, notification_msg)
-                return Response({'Card_Account_Data': serializer.data}, status=status.HTTP_201_CREATED)
-            return Response({'Error': serializer.errors})
-        else:
-            return Response({'Error': 'Card already registered'}, status=status.HTTP_400_BAD_REQUEST)
-            
+#        if CardAccount.objects.get(card_number=card_number).exists():
+        serializer = CardAccountSerializer(data=request.data)
+    
+        if serializer.is_valid():
+            serializer.save()
+            notification_msg  = f'I love you so much.'       
+            probase_response = send_notification(phone_number, notification_msg)
+            print(notification_msg)
+            print(f'PROBASE {probase_response}')
+            return Response({'Card_Account_Data': serializer.data}, status=status.HTTP_201_CREATED)
+        return Response({'Error': serializer.errors})
+#        else:
+#            return Response({'Error': 'Card already registered'}, status=status.HTTP_400_BAD_REQUEST)
+#            
    
 class BlockCardView(APIView):
     serializer_class = BlockCardSerializer

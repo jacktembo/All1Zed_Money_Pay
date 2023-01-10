@@ -29,7 +29,7 @@ from all1zed_api.nfs_cashin import (
     nfs_zamtel_cashin_confirm, nfs_zanaco_cashin,
     nfs_zanaco_cashin_confirm,
 )
-from all1zed_api.send_notification import send_notification
+from all1zed_api.send_notifications import send_notification
 
 
 
@@ -90,7 +90,7 @@ class CashinView(APIView):
                 if account_type == 'card':
                     receiver_card_number = request.data.get('receiver_card_number', None)
                     try:
-                        receiver = CardAccount.objects.get(receiver_card_number=receiver_card_number)
+                        receiver = CardAccount.objects.get(card_number=receiver_card_number)
                     except CardAccount.DoesNotExist:
                         return Response({'Error': 'Card account not found'})
 
@@ -105,8 +105,8 @@ class CashinView(APIView):
                     if sender and receiver:
                         txn_id = generate_pin()
                         Transaction.objects.create(
-                            card_number=sender.card_number,
-                            txn_type='transfer',
+#                            card_number=sender.card_number,
+#                            txn_type='transfer',
                             account_type=account_type,
                             txn_amount=amount,                      
                             update_amount=sender.card_balance,             
@@ -116,8 +116,8 @@ class CashinView(APIView):
                         ) 
 
                         Transaction.objects.create(
-                            card_number=card_number,
-                            txn_type='transfer',
+#                            card_number=card_number,
+#                            txn_type='transfer',
                             account_type=account_type,
                             txn_amount=amount,                      
                             update_amount=receiver.card_balance,             
@@ -149,18 +149,18 @@ class CashinView(APIView):
                                 sender.save()
 
                                 Transaction.objects.create(
-                                    card_number=card_number,
-                                    txn_type='cashin',
+#                                    card_number=card_number,
+#                                    txn_type='cashin',
                                     account_type=account_type,
                                     institution_name=institution_name,
                                     txn_amount=amount,                      
                                     update_amount=sender.card_balance,             
-                                    reference_id=txn_id,
+#                                    reference_id=txn_id,
                                     message=f'Transfer of {amount} to {reference} successful',
                                     status= True
                                 ) 
-                                verification_msg  = f'Dear customer, you have transfered ZMW{amount} to {reference}. Your card balance is now ZMW{sender.card_balance}. Txn ID: {txn_id}'       
-                                send_notification(receiver.phone_number, verification_msg)
+                                verification_msg  = f'Dear customer, you have transfered ZMW{amount} to {reference}. Your card balance is now ZMW{sender.card_balance}.'       
+                                send_notification(sender.phone_number, verification_msg)
                                 print(f'APPROVAL-CONFIRM {confirm_response}')
 
                                 return Response({'Success':'OK', 'Data': serializer.data})
@@ -240,7 +240,7 @@ class CashinView(APIView):
                         reference = account_number
                         
                         try:
-                            disbursment = nfs_zanaco_cashin(f'{amount}00', reference, login_session)
+                            disbursment = nfs_zanaco_cashin(f'{amount}', reference, login_session)
                             if disbursment.get("response_code") == '0':
                                 confirmation_number = disbursment.get('confirmation_number')
                                 confirm_response = nfs_zanaco_cashin_confirm(confirmation_number, login_session)
@@ -250,8 +250,8 @@ class CashinView(APIView):
                                 print(f'Zanaco-CONFIRM {confirm_response}')
 
                                 Transaction.objects.create(
-                                    card_number=card_number,
-                                    txn_type='cashin',
+#                                    card_number=card_number,
+#                                    txn_type='cashin',
                                     account_type=account_type,
                                     institution_name=bank_name,
                                     txn_amount=amount,                      
@@ -261,7 +261,7 @@ class CashinView(APIView):
                                     status= True
                                 )   
                             
-                                notification_msg = f'You have successfully transfered ZMW{amount} to {reference}. Your balance is now {sender.card_balance} Transaction ID: {txn_id}.'
+                                notification_msg = f'Dear customer, you have successfully transfered ZMW{amount} to {reference}. Your balance is now {sender.card_balance} Transaction ID: {txn_id}.'
                                 send_notification(sender.phone_number, notification_msg)
                                 
                                 return Response({'Success': 'OK', 'Details': serializer.data})

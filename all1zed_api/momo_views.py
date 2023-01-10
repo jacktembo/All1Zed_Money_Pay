@@ -10,7 +10,7 @@ from all1zed_api.momo_pay import (
   )
 from all1zed_api.models import Transaction, CardAccount
 from all1zed_api.serializers import BalanceSerializer
-from all1zed_api.send_notification import send_notification
+from all1zed_api.send_notifications import send_notification
 
 
 login_session = login()
@@ -35,13 +35,13 @@ class AirtelPayView(APIView):
         try:
             if "Please confirm" in response_body.get('confirmation_message', ''):
                 confirm = airtel_pay_confirm(phone_number, response_body.get('confirmation_number', None), login_session)
-                print(f"AIRTEL - airtel_pay_confirm {confirm}")
+                print(f"AIRTEL - airtel_pay_confirm {confirm} - SESSION_UUID: {login_session}")
                 wallet_msisdn = confirm.get('wallet_msisdn', None)
                 airtel_reference = confirm.get('request_reference', None)
         except (KeyError, TypeError) as e:
             pass
     
-        return Response({"success": "OK", "wallet_msisdn": f"{wallet_msisdn}", "airtel_reference": f"{airtel_reference}"})
+        return Response({"success": "OK","txn_amount": f"{total_bill}", "wallet_msisdn": f"{wallet_msisdn}", "airtel_reference": f"{airtel_reference}"})
 
 
 class AirtelPayConfirmView(APIView):
@@ -64,10 +64,11 @@ class AirtelPayConfirmView(APIView):
             if card_account.is_active == True:
                 # Update card account balance 
                 all1zed_charge = (2/100) * float(txn_amount)
-                credit_amount = float(txn_amount) - float(all1zed_charge)
-                card_account.card_balance = card_account.card_balance + float(credit_amount)
+                total_bill = int(txn_amount) + int(all1zed_charge)
+                actual_amount = float(total_bill) - int(all1zed_charge)
+                card_account.card_balance = card_account.card_balance + float(actual_amount)
 
-                airtel_query = airtel_pay_query(f'{txn_amount}', wallet_msisdn, airtel_reference, login_session)
+                airtel_query = airtel_pay_query(f'{total_bill}', wallet_msisdn, airtel_reference, session_uuid)
                 print(f'AIRTEL - airtel_query {airtel_query}')
             else:               
                 return Response({'Error': 'The card you are trying to access is blocked.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -75,16 +76,16 @@ class AirtelPayConfirmView(APIView):
             pass
     
         try:
-            if 'Please confirm' in airtel_query.get('confirmation_message'):
-                resp_body = airtel_pay_query_confirm(airtel_query.get('confirmation_number', None), login_session)
+            if airtel_query.get("response_code") == '0':
+                resp_body = airtel_pay_query_confirm(airtel_query.get('confirmation_number', None), session_uuid)
                 print(f'AIRTEL - resp_body {resp_body}')
         except (KeyError, TypeError) as e:
             pass
 
         try:
-            if 'Payment Successful' in resp_body.get('response_message', None):
+            if resp_body.get("response_code") == '0':
                 card_account.save()
-                verification_msg  = f'Dear customer, your card account has been credited with ZMW{amount}. Your card balance is now ZMW{card_account.card_balance}.'
+                verification_msg  = f'Dear customer, your card account has been credited with ZMW{txn_amount}. Your card balance is now ZMW{card_account.card_balance}.'
                 send_notification(card_account.phone_number, verification_msg)
                 return Response({"Success": "OK"})
         except (KeyError, TypeError) as e:
@@ -115,7 +116,6 @@ class ZamtelPayView(APIView):
             return Response({'Error': 'Card does not exist'})
             
         try:
-             
             if card_account.is_active == True:
                 # Update card account balance 
                 txn_charge = (2/100) * float(txn_amount)
@@ -138,7 +138,7 @@ class ZamtelPayView(APIView):
 class MtnDebitView(APIView):
 
     def post(self, request, *args, **kwargs):
-        session_uuid = request.data.get('session_uuid', None)
+#        session_uuid = request.data.get('session_uuid', None)
         wallet_msisdn = request.data.get('wallet_msisdn', None)
         txn_amount = float(request.data.get('txn_amount'))
 
@@ -146,14 +146,14 @@ class MtnDebitView(APIView):
         total_bill = int(txn_amount) + int(all1zed_charge)
      
         try:
-            resp_body = mtn_momo_pay(f'{total_bill}00', wallet_msisdn, session_uuid)
+            resp_body = mtn_momo_pay(f'{total_bill}', wallet_msisdn, login_session)
             txn_id = resp_body.get('supplier_transaction_id', None)
             phone_number = resp_body.get('wallet_msisdn', None)
-            print(f"AIRTEL - airtel_pay {resp_body}")
+            print(f"MTN - resp_body {resp_body} - SESSION_UUID: {login_session}")
         except (KeyError, TypeError) as e:
             pass
 
-        return Response({"Message": "Success", "supplier_transaction_id": txn_id, "wallet_msisdn": phone_number})
+        return Response({"Message": "Success","session_uuid": f"{login_session}", "supplier_transaction_id": txn_id, "wallet_msisdn": phone_number})
         
 
 class MtnDebitConfirm(APIView):
@@ -179,10 +179,11 @@ class MtnDebitConfirm(APIView):
             if card_account.is_active == True:
                 # Update card account balance 
                 txn_charge = (2/100) * float(txn_amount)
-                actual_amount = float(txn_amount) - float(txn_charge)
+                total_bill = int(txn_amount) + int(txn_charge)
+                actual_amount = float(total_bill) - int(txn_charge)
                 card_account.card_balance = card_account.card_balance + float(actual_amount)
 
-                mtn_approval = mtn_momo_pay_approval(f'{txn_amount}', wallet_msisdn, supplier_transaction_id, session_uuid)
+                mtn_approval = mtn_momo_pay_approval(f'{total_bill}', wallet_msisdn, supplier_transaction_id, session_uuid)
                 print(f'MTN-APPROVAL {mtn_approval}')
             else:
                 return Response({'Error': 'The card you are trying to access is blocked.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -197,7 +198,7 @@ class MtnDebitConfirm(APIView):
                 approval_response = mtn_momo_pay_confirm(confirmation_number, session_uuid)
                 card_account.save()
 
-                verification_msg  = f'Dear customer, your card account has been credited with ZMW{amount}. Your card balance is now ZMW{card_account.card_balance}.'
+                verification_msg  = f'Dear customer, your card account has been credited with ZMW{txn_amount}. Your card balance is now ZMW{card_account.card_balance}.'
                 send_notification(card_account.phone_number, verification_msg)
                 print(f'APPROVAL-CONFIRM {approval_response}')
 

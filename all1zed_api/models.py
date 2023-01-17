@@ -3,6 +3,8 @@ from django.utils import timezone
 from authentication.models import User
 from django.db import models
 from django.conf import settings
+from authentication.models import BusinessProfile
+import random
 
 
 class CardAccount(models.Model):
@@ -61,6 +63,25 @@ class MerchantCode(models.Model):
     business_name = models.CharField(max_length=200)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
+
+
+class Branch(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
+    business_profile = models.ForeignKey(BusinessProfile, on_delete=models.CASCADE)
+    business_type = models.CharField(max_length=200)
+    branch_name = models.CharField(max_length=200)
+    merchant_code = models.CharField(max_length=16, unique=True)
+    branch_phone_number = models.CharField(max_length=16)
+    notification_phone_number1 = models.CharField(max_length=16)
+    notification_phone_number2 = models.CharField(max_length=16, blank=True, null=True)
+    notification_phone_number3 = models.CharField(max_length=16, blank=True, null=True)
+    branch_address = models.CharField(max_length=255)
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(f'business_type: {self.business_type} | branch_name: {self.branch_name}')
 
 
 class Transaction(models.Model):

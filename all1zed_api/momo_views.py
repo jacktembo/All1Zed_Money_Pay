@@ -52,8 +52,8 @@ class AirtelPayConfirmView(APIView):
         txn_amount = request.data.get('txn_amount')
         card_number = request.data.get('card_number', None)
         airtel_reference = request.data.get('airtel_reference', None)
+        txn_id = generate_pin(12)
 
-        # Check if card is registered
         try: 
             card_account = CardAccount.objects.get(card_number=card_number)
             print(card_account)
@@ -62,7 +62,6 @@ class AirtelPayConfirmView(APIView):
         
         try:
             if card_account.is_active == True:
-                # Update card account balance 
                 all1zed_charge = (2/100) * float(txn_amount)
                 total_bill = int(txn_amount) + int(all1zed_charge)
                 actual_amount = float(total_bill) - int(all1zed_charge)
@@ -85,6 +84,15 @@ class AirtelPayConfirmView(APIView):
         try:
             if resp_body.get("response_code") == '0':
                 card_account.save()
+                Transaction.objects.create(
+                    card_number=card_number,
+                    txn_type='top up',
+                    txn_amount=txn_amount,                      
+                    update_amount=card_account.card_balance,             
+                    reference_id=txn_id,
+                    message=f'Top up of {txn_amount} successful',
+                    status= True
+                )
                 verification_msg  = f'Dear customer, your card account has been credited with ZMW{txn_amount}. Your card balance is now ZMW{card_account.card_balance}.'
                 send_notification(card_account.phone_number, verification_msg)
                 return Response({"Success": "OK"})
@@ -99,7 +107,8 @@ class ZamtelPayView(APIView):
         msisdn = request.data.get('msisdn', '')
         txn_amount = request.data.get('txn_amount', '')
         card_number = request.data.get('card_number', None)
-        
+        txn_id = generate_pin(12)
+
         all1zed_charge = (2/100) * float(txn_amount)
         total_bill = int(txn_amount) + int(all1zed_charge)
 
@@ -117,7 +126,6 @@ class ZamtelPayView(APIView):
             
         try:
             if card_account.is_active == True:
-                # Update card account balance 
                 txn_charge = (2/100) * float(txn_amount)
                 actual_amount = float(txn_amount) - float(txn_charge)
                 card_account.card_balance = card_account.card_balance + float(actual_amount)
@@ -129,6 +137,15 @@ class ZamtelPayView(APIView):
             pass
         if 'Payment Successful' in zamtel_confirm.get('response_message'):
             card_account.save()
+            Transaction.objects.create(
+                card_number=card_number,
+                txn_type='top up',
+                txn_amount=txn_amount,                      
+                update_amount=card_account.card_balance,             
+                reference_id=txn_id,
+                message=f'Top up of {txn_amount} successful',
+                status= True
+            )
             verification_msg  = f'Dear customer, your card account has been credited with ZMW{amount}. Your card balance is now ZMW{card_account.card_balance}.'
             send_notification(card_account.phone_number, verification_msg)
             return Response({'Success': 'OK'})
@@ -138,7 +155,6 @@ class ZamtelPayView(APIView):
 class MtnDebitView(APIView):
 
     def post(self, request, *args, **kwargs):
-#        session_uuid = request.data.get('session_uuid', None)
         wallet_msisdn = request.data.get('wallet_msisdn', None)
         txn_amount = float(request.data.get('txn_amount'))
 
@@ -167,8 +183,8 @@ class MtnDebitConfirm(APIView):
         supplier_transaction_id = request.data.get('supplier_transaction_id', '')
         card_number = request.data.get('card_number', '')
         txn_amount = request.data.get('txn_amount', None)
+        txn_id = generate_pin(12)
 
-        # Check if card is registered
         try: 
             card_account = CardAccount.objects.get(card_number=card_number)
             print(card_account)
@@ -177,7 +193,6 @@ class MtnDebitConfirm(APIView):
 
         try:
             if card_account.is_active == True:
-                # Update card account balance 
                 txn_charge = (2/100) * float(txn_amount)
                 total_bill = int(txn_amount) + int(txn_charge)
                 actual_amount = float(total_bill) - int(txn_charge)
@@ -198,6 +213,15 @@ class MtnDebitConfirm(APIView):
                 approval_response = mtn_momo_pay_confirm(confirmation_number, session_uuid)
                 card_account.save()
 
+                Transaction.objects.create(
+                    card_number=card_number,
+                    txn_type='top up',
+                    txn_amount=txn_amount,                      
+                    update_amount=card_account.card_balance,             
+                    reference_id=txn_id,
+                    message=f'Top up of {txn_amount} successful',
+                    status= True
+                ) 
                 verification_msg  = f'Dear customer, your card account has been credited with ZMW{txn_amount}. Your card balance is now ZMW{card_account.card_balance}.'
                 send_notification(card_account.phone_number, verification_msg)
                 print(f'APPROVAL-CONFIRM {approval_response}')

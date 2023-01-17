@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib import auth
 from rest_framework import status
+from rest_framework import permissions
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response 
@@ -12,7 +13,7 @@ from .serializers import (
 )
 from authentication.serializers import CardAccountSerializer
 from .helper_functions import id_generator
-from all1zed_api.models import CardAccount, MerchantCode
+from all1zed_api.models import CardAccount, MerchantCode, BusinessAccount
 from all1zed_api.momo_pay import generate_pin
 from all1zed_api.send_notifications import send_notification
 import jwt 
@@ -57,7 +58,6 @@ class OrganizationProfileView(APIView):
     start using the All1Zed app. (Emmanuel Simasiku)
     """
     serializer_class = OrganizationProfileSerializer
-#    parser_classes = (MultiPartParser,)
 
     def get(self, request, format=None):
         account = None
@@ -75,7 +75,7 @@ class OrganizationProfileView(APIView):
 
     def post(self, request, format='json'):
         serializer = OrganizationProfileSerializer(data=request.data)
-        merchant_code = f'{pin_generator(5)}'
+        merchant_code = f'{generate_pin(5)}'
 
         if serializer.is_valid():
             MerchantCode.objects.create(
@@ -99,8 +99,8 @@ class BusinessProfileView(APIView):
     This code section creates a business profile after they have reqiestered on All1Zed platform.
     This is the second step after creating the first account required to start using the the All1Zed app.
     '''
-#    permission_classes = [permissions.AllowAny,]
-#    parser_classes = (MultiPartParser,)
+    permission_classes = [permissions.IsAuthenticated,]
+    parser_classes = (MultiPartParser,)
     serializer_class = BusinessProfileSerializer
 
     def get(self, request, formate='json'):
@@ -116,7 +116,7 @@ class BusinessProfileView(APIView):
         except BusinessAccount.DoesNotExist:
             return Response({'Profile': 'Profile not found'})
 
-        serializer = BusinessProfileSeriualizer(business, context={'request': request})
+        serializer = BusinessProfileSerializer(business, context={'request': request})
         return Response(
             {
                 'Profile': serializer.data, 
@@ -158,20 +158,17 @@ class RegisterCardView(APIView):
         card_number = request.data.get('card_number', None)
         card_id = id_generator()
         
-#        if CardAccount.objects.get(card_number=card_number).exists():
         serializer = CardAccountSerializer(data=request.data)
     
         if serializer.is_valid():
             serializer.save()
-            notification_msg  = f'I love you so much.'       
+            notification_msg  = f'Dear {first_name} {last_name}, your card account with card number: {card_number} has been created successfully. Dial *772# to top up your card and start transacting.'       
             probase_response = send_notification(phone_number, notification_msg)
             print(notification_msg)
             print(f'PROBASE {probase_response}')
-            return Response({'Card_Account_Data': serializer.data}, status=status.HTTP_201_CREATED)
+            return Response({'Success': 'Created', 'Card_Account_Data': serializer.data}, status=status.HTTP_201_CREATED)
         return Response({'Error': serializer.errors})
-#        else:
-#            return Response({'Error': 'Card already registered'}, status=status.HTTP_400_BAD_REQUEST)
-#            
+        
    
 class BlockCardView(APIView):
     serializer_class = BlockCardSerializer

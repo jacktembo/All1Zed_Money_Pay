@@ -86,6 +86,16 @@ class CardAccountSerializer(serializers.ModelSerializer):
         model = CardAccount
         fields = ['first_name', 'last_name', 'phone_number', 'card_id', 'card_number']
 
+        def validate(self, attrs):
+            card_number = attrs.get('card_number', '')
+            if CardAccount.objects.filter(card_number=card_number).exists():
+                raise serializers.ValidationError({'Error': 'Card number is already in use.'})
+            else:
+                return super().validate(attrs)
+        
+        def create(self, validated_data):
+            return CardAccount.objects.create(**validated_data)
+
 
 class BlockCardSerializer(serializers.ModelSerializer):
     class meta:

@@ -1,13 +1,15 @@
 from rest_framework.views import APIView
-from all1zed_api.models import Transaction
-from all1zed_api.serializers import (
-    BalanceSerializer, BusinessAccountSerializer,
-    BusinessProfileListSerializer,
-    CardsListSerializer, CardPaymentSerializer,
-) 
+from rest_framework import status, permissions
 from authentication.serializers import BusinessProfileSerializer, OrganizationProfileSerializer
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
+from all1zed_api.models import Transaction, BusinessTransaction
+from all1zed_api.serializers import (
+    BalanceSerializer, BusinessAccountSerializer,
+    BusinessProfileListSerializer, TransactionHistorySerializer,
+    CardsListSerializer, CardPaymentSerializer, BusinessTxnHistorySerializer,
+) 
+from authentication.models import BusinessProfile
 from all1zed_api.momo_pay import generate_pin, login
 from .models import CardAccount, BusinessAccount
 from all1zed_api.momo_pay import generate_pin, login
@@ -44,26 +46,23 @@ class CardPaymentView(APIView):
     - A percent from the amount is creditted to All1Zed.
     - User account is debited 
     '''
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = CardPaymentSerializer
 
     def post(self, request, format=None):
         serializer = CardPaymentSerializer(data=request.data)
 
         if serializer.is_valid():
-            merchant_code = request.data.get('merchant_code', '')
-            branch_name = request.data.get('branch_name', None)
             card_number = request.data.get('card_number', None)
             amount = float(request.data.get('txn_amount', None))
             
-            # Find customer account on All1Zed platform
             try:
                 card_account = CardAccount.objects.get(card_number=card_number)
             except CardAccount.DoesNotExist:
                 return Response({'Error': 'Card account not found'})
 
-            # Find Merchant account on All1Zed platform
             try:
-                merchant_account = BusinessAccount.objects.get(merchant_code=merchant_code)
+                merchant_account = BusinessAccount.objects.get(user=request.user)
             except BusinessAccount.DoesNotExist:
                 return Response({'Error': 'Merchant account not found'})
 
@@ -95,12 +94,13 @@ class CardPaymentView(APIView):
                             txn_amount=amount,                      
                             update_amount=card_account.card_balance,             
                             reference_id=txn_id,
-                            message=f'Payment of {amount} to {merchant_code} is successful',
+                            message=f'Payment of {amount} to {merchant_account.merchant_code} is successful',
                             status= True
                         )  
 
-                        Transaction.objects.create(
-                            branch_name=branch_name,
+                        BusinessTransaction.objects.create(
+                            user=request.user.username,
+                            branch_name=merchant_account.branch_name,
                             txn_type='pay',
                             txn_amount=amount,             
                             txn_commission=commission,          
@@ -110,7 +110,7 @@ class CardPaymentView(APIView):
                             status= True
                         )  
                      
-                        notification_msg = f'You have successfully paid ZMW{amount} to {merchant_account.business_name} - {merchant_code}. Your balance is now {card_account.card_balance} Transaction ID: {txn_id}'
+                        notification_msg = f'You have successfully paid ZMW{amount} to {merchant_account.business_name} - {merchant_account.merchant_code}. Your balance is now {card_account.card_balance} Transaction ID: {txn_id}'
                         send_notification(card_account.phone_number, notification_msg)
                         
                         return Response({'Success': 'OK', 'Details': serializer.data})
@@ -124,6 +124,7 @@ class CardPaymentView(APIView):
 
 
 class BusinessAcountListView(RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = BusinessProfileSerializer
 
     def get(self, request):
@@ -135,6 +136,7 @@ class BusinessAcountListView(RetrieveAPIView):
 
 
 class ListCardsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = CardsListSerializer
     
     def get(self, request, *args, **kwargs):
@@ -144,22 +146,79 @@ class ListCardsView(APIView):
         return Response({'All_Cards': serializer.data})
 
 
+class PersonalTxnHistoryView(RetrieveAPIView):
+    serializer_class = TransactionHistorySerializer
 
+    def get(self, request, *args, **kwargs):
+        txn_date = request.data.get('txn_date', None)
+        from_date = request.data.get('start_date', None)
+        to_date = request.data.get('end_date', None)
+        card_number = request.data.get('card_number', None)
 
+        try:
+            card_account = CardAccount.objects.get(card_number=card_number)
+        except CardAccount.DoesNotExist:
+            return Response({'Error': 'Card account not found'})
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        if card_number == card_account.card_number:
+            transactions = Transaction.objects.filter(card_number=card_number).order_by('-created_on')
             
+            if card_account.is_active == True:
+                if txn_date:
+                    txn_list = transactions.filter(created_on=txn_date)
+                    serializer = TransactionHistorySerializer(txn_list, many=True)
+                    return Response({'Personal_Transaction_list': serializer.data}, status=status.HTTP_200_OK)
+
+                elif from_date and to_date:
+                    txn_list = transactions.filter(created_on__range=['from_date', 'to_date'])
+                    serializer = TransactionHistorySerializer(txn_list, many=True)
+                    return Response({'Personal_Transaction_list': serializer.data}, status=status.HTTP_200_OK)
+
+                else:
+                    serializer = TransactionHistorySerializer(transactions, many=True)
+                    return Response({'Personal_Transaction_list': serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({'Error': 'Card account not found'})
+        else:
+            return Response({'Error': 'Invalid card number'})
+
+
+class BusinessTxnHistory(RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BusinessTxnHistorySerializer
+
+    def get(self, request, *args, **kwargs):
+        queryset = BusinessTransaction.objects.all().order_by('created_on')
+        transactions = queryset.filter(user=request.user)
+        txn_type = request.query_params.get('txn_class')
+        txn_date = request.query_params.get('txn_date')
+        from_date = request.query_params.get('start_date')
+        to_date = request.query_params.get('end_date')
+        business_name = self.request.query_params.get('business_name', None)
+
+        try:
+            business_account = BusinessAccount.objects.filter(user=request.user)
+        except BusinessAccount.DoesNotExist:
+            return Response({'Error': 'Business account not found'})
+
+        if business_name == business_account.business_name:
+            if txn_date:
+                txn_list = transactions.filter(created_on=txn_date, business_name=business_name)
+                serializer = BusinessTxnHistorySerializer(txn_list, many=True)
+                return Response({'Business_Transaction_list': serializer.data}, status=status.HTTP_200_OK)
+
+            elif from_date and to_date:
+                txn_list = transactions.filter(created_on_range=['from_date', 'to_date'])
+                serializer = BusinessTxnHistorySerializer(txn_list, many=True)
+                return Response({'Business_Transaction_list': serializer.dat}, status=status.HTTP_200_OK)
+
+            else:
+                serializer = BusinessTxnHistorySerializer(transactions, many=True)
+                return Response({'Business_Transaction_list': serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({'Error': 'Invalid business name'})
+
+
+
+
+

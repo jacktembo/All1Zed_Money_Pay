@@ -80,6 +80,9 @@ class Branch(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
+    class  Meta: 
+        verbose_name_plural  =  "Branches" 
+
     def __str__(self):
         return str(f'business_type: {self.business_type} | branch_name: {self.branch_name}')
 
@@ -119,6 +122,10 @@ class BusinessTransaction(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
    
+
+    class Meta:  
+        verbose_name  =  "Transaction" 
+        verbose_name_plural  =  "Transactions" 
 
     def __str__(self):
         return f"{self.username} - {self.trans_action} - {self.refference_id}"

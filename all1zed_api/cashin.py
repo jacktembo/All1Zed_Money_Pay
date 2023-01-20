@@ -57,7 +57,6 @@ class CashinView(APIView):
     '''
     All1zed card user can tranfer money from their card a/c to another card or momo a/c
     '''
-    serializer_class = CardAccountSerializer
 
     def get(self, request, format=None):
         serializer = CardAccountSerializer(data=request.data)

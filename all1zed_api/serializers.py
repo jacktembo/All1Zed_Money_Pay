@@ -25,6 +25,11 @@ class BusinessAccountSerializer(serializers.ModelSerializer):
         model = BusinessAccount
         fields = ['merchant_code', 'business_name']
 
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields = '__all__'
+
 
 class TransactionHistorySerializer(serializers.ModelSerializer):
     class Meta:

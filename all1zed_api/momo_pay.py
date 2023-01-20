@@ -35,7 +35,7 @@ def login():
     }
     
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/authClient", params=params, json=auth_data, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(results.get('session_uuid', None))
     return results.get('session_uuid', None)
 
@@ -46,7 +46,7 @@ def get_product_list(login_session):
         "request_reference": f"{generate_pin(8)}",
     }
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/productList", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(results)
     return results
 
@@ -61,7 +61,7 @@ def airtel_pay(phone_number,amount,login_session):
     }
 
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/airtelPayPayment", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(response.text)
     return results
 
@@ -76,7 +76,7 @@ def airtel_pay_confirm(phone_number, confirmation_number, login_session):
     }
 
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/airtelPayPaymentConfirm", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(f'SESSION_UUID: {login_session}- results')
     return results
 
@@ -92,7 +92,7 @@ def airtel_pay_query(amount, phone_number, airtel_reference, login_session):
     }
 
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/airtelPayQuery", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(results)
     return results
 
@@ -106,7 +106,7 @@ def airtel_pay_query_confirm(confirmation_number, login_session):
     }
 
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/airtelPayQueryConfirm", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(results)
     return results
 
@@ -120,7 +120,7 @@ def zamtel_pay(amount, msisdn, login_session):
     }
 
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/zamtelMoneyPay", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(results)
     return results
 
@@ -133,7 +133,7 @@ def zamtel_pay_confirm(confirmation_number, login_session):
     }
 
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/zamtelMoneyPayConfirm", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(results)
     return results
 
@@ -150,7 +150,7 @@ def mtn_momo_pay(amount, wallet_msisdn, login_session):
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/mtnDebit", json=payload, headers=headers)
 #    print(response.json())
 #    return response.json()
-    results = json.loads(response.text)
+    results = response.json()
     print(f"MTN_DEBIT {results}")
     return results
 
@@ -166,7 +166,7 @@ def mtn_momo_pay_approval(amount, phone_number, supplier_transaction_id, login_s
     }
 
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/mtnDebitApproval", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(f"MTN-APPROVAL {results}")
     return results
 
@@ -180,6 +180,6 @@ def mtn_momo_pay_confirm(confirmation_number, login_session):
     }
     
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/mtnDebitApprovalConfirm", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(f"MTN_DEBIT_CONFIRM {results}")
     return results

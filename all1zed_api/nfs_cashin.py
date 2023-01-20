@@ -31,7 +31,7 @@ def nfs_airtel_cashin(amount, reference, login_session):
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/nfsCashIn", json=payload, headers=headers)
 #    print(response.json())
 #    return response.json()
-    results = json.loads(response.text)
+    results = response.json()
     print(f"NFS_AIRTEL_DEBIT {results}")
     return results
 
@@ -45,7 +45,7 @@ def nfs_airtel_cashin_confirm(confirmation_number, login_session):
     }
     
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/nfsCashinConfirm", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(f"DEBIT_CONFIRM {results}")
     return results
 
@@ -62,7 +62,7 @@ def nfs_momo_cashin(amount, reference, login_session):
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/nfsCashIn", json=payload, headers=headers)
 #    print(response.json())
 #    return response.json()
-    results = json.loads(response.text)
+    results = response.json()
     print(f"NFS_DEBIT {results}")
     print(response)
     return results
@@ -77,7 +77,7 @@ def nfs_momo_cashin_confirm(confirmation_number, login_session):
     }
     
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/nfsCashInConfirm", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(f"DEBIT_CONFIRM {results}")
     return results
 
@@ -95,7 +95,7 @@ def nfs_zamtel_cashin(amount, reference, login_session):
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/nfsCashIn", json=payload, headers=headers)
 #    print(response.json())
 #    return response.json()
-    results = json.loads(response.text)
+    results = response.json()
     print(f"NFS_DEBIT {results}")
     return results
 
@@ -109,7 +109,7 @@ def nfs_zamtel_cashin_confirm(confirmation_number, login_session):
     }
     
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/nfsCashInConfirm", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(f"DEBIT_CONFIRM {results}")
     return results
 
@@ -127,7 +127,7 @@ def nfs_zanaco_cashin(amount, reference, login_session):
 #    print(response.json())
 #    return response.json()
     print(f'{22}00')
-    results = json.loads(response.text)
+    results = response.json()
     print(f"NFS_DEBIT {results}")
     return results
 
@@ -141,7 +141,7 @@ def nfs_zanaco_cashin_confirm(confirmation_number, login_session):
     }
     
     response = requests.post(f"{os.environ.get('KAZANG_BASE_URL')}/nfsCashInConfirm", json=payload, headers=headers)
-    results = json.loads(response.text)
+    results = response.json()
     print(f"DEBIT_CONFIRM {results}")
     return results
 

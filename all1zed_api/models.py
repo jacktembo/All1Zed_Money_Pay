@@ -105,7 +105,6 @@ class Transaction(models.Model):
 class BusinessTransaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     username = models.CharField(max_length=100, blank=True)
-    business_name = models.ForeignKey(BusinessAccount,  on_delete=models.CASCADE, null=True, blank=True)
     branch_name = models.ForeignKey(BusinessAccount, on_delete=models.CASCADE, null=True, blank=True)
     card_number = models.ForeignKey(CardAccount, on_delete=models.SET_NULL, null=True, blank=True)
     account_type = models.CharField(max_length=100, blank=True, null=True) #Card, MOMO or Bank

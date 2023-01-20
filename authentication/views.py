@@ -100,7 +100,6 @@ class BusinessProfileView(APIView):
     This is the second step after creating the first account required to start using the the All1Zed app.
     '''
     permission_classes = [permissions.IsAuthenticated,]
-    parser_classes = (MultiPartParser,)
     serializer_class = BusinessProfileSerializer
 
     def get(self, request, formate='json'):

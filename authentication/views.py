@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import auth
+from rest_framework import viewsets
 from rest_framework import status
 from rest_framework import permissions
 from rest_framework.views import APIView
@@ -7,11 +8,10 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response 
 from .models import BusinessProfile, OrganizationProfile, LimitedCompanyProfile
 from .serializers import (
-    UserSerializer, LoginSerializer, 
-    BusinessProfileSerializer, BlockCardSerializer, 
-    OrganizationProfileSerializer, CreateBusinessSerializer,
+    UserSerializer, LoginSerializer, BlockCardSerializer, 
+    OrganizationProfileSerializer, 
 )
-from authentication.serializers import CardAccountSerializer
+from authentication.serializers import CardAccountSerializer, BusinessProfileSerializer
 from .helper_functions import id_generator
 from all1zed_api.models import CardAccount, MerchantCode, BusinessAccount
 from all1zed_api.momo_pay import generate_pin
@@ -94,7 +94,7 @@ class OrganizationProfileView(APIView):
 
 
 
-class BusinessProfileView(APIView):
+class BusinessProfileViewSet(viewsets.ModelViewSet):
     '''
     This code section creates a business profile after they have reqiestered on All1Zed platform.
     This is the second step after creating the first account required to start using the the All1Zed app.
@@ -125,25 +125,24 @@ class BusinessProfileView(APIView):
         )
 
     def post(self, request, formate='json'):
-        business_name = request.data.get('business_name')
-        merchant_code = f'{generate_pin(5)}'
-        serializer = CreateBusinessSerializer(data=request.data)
+        serializer_class = BusinessProfileSerializer
+        serializer = BusinessProfileSerializer(data=request.data)
 
         if serializer.is_valid():
             MerchantCode.objects.create(
                 user=request.user,
-                business_name=business_name,
-                merchant_code=merchant_code
+                business_name=serializer.data.business_name,
+                merchant_code=serializer.data.merchant_code,
             )
             business_account = BusinessAccount(
                 user=request.user,
-                merchant_code=merchant_code,
+                merchant_code=serializer.data.merchant_code,
                 phone_number=request.user.username
             )
 
             business_account.save()
-            serializer.save(user=request.user, merchant_code=merchant_code)
-            return Response({'Sucess': 'OK'})
+            serializer.save(user=request.user, merchant_code=serializer.data.merchant_code)
+            return Response({'Sucess': 'OK'}, status=status.HTTP_201_CREATED)
         return Response({'Error': serializer.errors})
 
 
@@ -186,11 +185,3 @@ class BlockCardView(APIView):
                 return Response({'Error': 'Card is already blocked'}, status=status.HTTP_400_BAD_REQUEST)
         except CardAccount.DoesNotExist:
             return Response({'Error': 'Card does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
-
-

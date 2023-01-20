@@ -1,11 +1,10 @@
 from rest_framework import serializers
 from rest_framework.relations import StringRelatedField
 from all1zed_api.models import (
-    CardAccount, BusinessAccount, 
+    CardAccount, BusinessAccount,
     Transaction, Payment, BusinessTransaction,
 )
 from authentication.models import BusinessProfile
-
 
 
 class BalanceSerializer(serializers.ModelSerializer):
@@ -24,6 +23,7 @@ class BusinessAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = BusinessAccount
         fields = ['merchant_code', 'business_name']
+
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:

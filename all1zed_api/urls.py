@@ -1,7 +1,7 @@
 from django.urls import path
 from all1zed_api import views, momo_views
 from all1zed_api.cashin import CardDetails, CashinView
-from authentication.views import OrganizationProfileView,BusinessProfileView
+from authentication.views import OrganizationProfileView
 
 urlpatterns = [
     path('api/payments/mtnPayment/', momo_views.MtnDebitView.as_view(), name='mtn-pay'),

@@ -4,7 +4,9 @@ from django.contrib.auth import get_user_model
 from rest_framework.fields import CharField
 from rest_framework.relations import StringRelatedField
 #from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import User, BusinessProfile, OrganizationProfile
+from .models import (
+    User, BusinessProfile, OrganizationProfile, Branch,
+)
 from all1zed_api.models import CardAccount
 from .helper_functions import id_generator
 import phonenumbers
@@ -49,24 +51,35 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
                         "tpin_file": {'required': False}}
 
 
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = ('id', 'branch_name', 'merchant_code', 'is_active', 'business_profile', 'branch_address')
+
+
 class BusinessProfileSerializer(serializers.ModelSerializer):
     user = StringRelatedField()
     created_by = StringRelatedField()
     tpin_number = serializers.CharField()
     pacra_number = serializers.CharField()
+    branch = BranchSerializer(many=True)
 
     class Meta:
         model = BusinessProfile
         fields = '__all__'
         extra_kwargs = {'user': {'read_only': True}, 'created_by': {'read_only': True}, 
                         'merchant_code': {'read_only': True}}
-    
 
-class CreateBusinessSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model = BusinessProfile
-        exclude = ('user', 'created_by', 'merchant_code')
+        def create(self, validated_data):
+            branches_data = validated_data.pop('branches')
+
+            if not branches_data:
+                raise serializers.ValidationError({'Error': 'A business must at least have one branch'})
+            business = BusinessProfile.objects.create(**validated_data)
+
+            for branch_data in branches_data:
+                Branch.objects.create(business=business, **branch_data)
+            return business
 
 
 class CreateOrganizationSerializer(serializers.ModelSerializer):
@@ -84,7 +97,7 @@ class CardAccountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CardAccount
-        fields = ['first_name', 'last_name', 'phone_number', 'card_id', 'card_number']
+        fields = ('first_name', 'last_name', 'phone_number', 'card_id', 'card_number')
 
         def validate(self, attrs):
             card_number = attrs.get('card_number', '')
